@@ -1371,3 +1371,8 @@ h1, h2, h3, h4, h5, h6 {
 #footer .credits a:hover {
   color: #f1f7ff;
 }
+
+.logo1 {
+  width: 250%;
+  float: left;
+}
