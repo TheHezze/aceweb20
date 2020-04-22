@@ -566,7 +566,14 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* covid */
-#about .about-container .icon-box .icon1 {
+
+.icon1-box {
+  background: #fff;
+  background-size: cover;
+  padding: 0 0 30px 0;
+}
+
+.icon1 {
   float: left;
   background: #fff;
   width: 64px;
@@ -581,13 +588,36 @@ h1, h2, h3, h4, h5, h6 {
   transition: all 0.3s ease-in-out;
 }
 
-#about .about-container .icon-box:hover .icon1 {
+.icon1 {
   background: ##f20c0c;
 }
 
-#about .about-container .icon-box:hover .icon1 i {
+.icon1 i {
   color: #fff;
 }
+
+.icon1-box:hover .icon1 i {
+  color: #fff;
+}
+
+.icon1-box .title1 {
+  margin-left: 80px;
+  font-weight: 600;
+  margin-bottom: 5px;
+  font-size: 18px;
+}
+
+.icon1-box .title1 a {
+  color: #283d50;
+}
+
+.icon1-box .description1 {
+  margin-left: 80px;
+  line-height: 24px;
+  font-size: 14px;
+}
+
+/* covid done */
 
 #about .about-container .icon-box:hover .icon i {
   color: #fff;
@@ -1390,7 +1420,7 @@ h1, h2, h3, h4, h5, h6 {
   color: #f1f7ff;
 }
 
-.logo1 {
-  width: 250%;
-  float: left;
+.online1 {
+  float: right;
+  margin-top: auto;
 }
