@@ -785,6 +785,90 @@ h1, h2, h3, h4, h5, h6 {
   color: #cce5ff;
 }
 
+/* Schedule section */
+
+#schedule {
+  padding: 60px 0;
+  background: #004a99;
+}
+
+#schedule .section-header h3, #why-us .section-header p {
+  color: #fff;
+}
+
+#schedule .card {
+  background: #00458f;
+  border-color: #00458f;
+  border-radius: 10px;
+  margin: 0 15px;
+  padding: 15px 0;
+  text-align: center;
+  color: #fff;
+  transition: 0.3s ease-in-out;
+  height: 100%;
+}
+
+@media (max-width: 991px) {
+  #schedule .card {
+    margin: 0;
+  }
+}
+
+#schedule .card:hover {
+  background: #003b7a;
+  border-color: #003b7a;
+}
+
+#schedule .card i {
+  font-size: 48px;
+  padding-top: 15px;
+  color: #bfddfe;
+}
+
+#schedule .card h5 {
+  font-size: 22px;
+  font-weight: 600;
+}
+
+#schedule .card p {
+  font-size: 15px;
+  color: #d8eafe;
+}
+
+#schedule .card .readmore {
+  color: #fff;
+  font-weight: 600;
+  display: inline-block;
+  transition: 0.3s ease-in-out;
+  border-bottom: #00458f solid 2px;
+}
+
+#schedule .card .readmore:hover {
+  border-bottom: #fff solid 2px;
+}
+
+#schedule .counters {
+  padding-top: 40px;
+}
+
+#schedule .counters span {
+  font-family: "Montserrat", sans-serif;
+  font-weight: bold;
+  font-size: 48px;
+  display: block;
+  color: #fff;
+}
+
+#schedule .counters p {
+  padding: 0;
+  margin: 0 0 20px 0;
+  font-family: "Montserrat", sans-serif;
+  font-size: 14px;
+  color: #cce5ff;
+}
+
+
+
 /* Portfolio Section
 --------------------------------*/
 #portfolio {
