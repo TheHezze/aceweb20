@@ -707,7 +707,7 @@ h1, h2, h3, h4, h5, h6 {
 
 #why-us {
   padding: 60px 0;
-  background: #004a99;
+  background: #1545B3;
 }
 
 #why-us .section-header h3, #why-us .section-header p {
@@ -715,8 +715,8 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 #why-us .card {
-  background: #00458f;
-  border-color: #00458f;
+  background: #184ecd;
+  border-color: #184ecd;
   border-radius: 10px;
   margin: 0 15px;
   padding: 15px 0;
@@ -758,7 +758,7 @@ h1, h2, h3, h4, h5, h6 {
   font-weight: 600;
   display: inline-block;
   transition: 0.3s ease-in-out;
-  border-bottom: #00458f solid 2px;
+  border-bottom: #184ecd solid 2px;
 }
 
 #why-us .card .readmore:hover {
@@ -789,7 +789,7 @@ h1, h2, h3, h4, h5, h6 {
 
 #schedule {
   padding: 60px 0;
-  background: #004a99;
+  background: #1545B3;
 }
 
 #schedule .section-header h3, #why-us .section-header p {
@@ -797,8 +797,8 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 #schedule .card {
-  background: #00458f;
-  border-color: #00458f;
+  background: #184ecd;
+  border-color: #184ecd;
   border-radius: 10px;
   margin: 0 15px;
   padding: 15px 0;
@@ -840,7 +840,7 @@ h1, h2, h3, h4, h5, h6 {
   font-weight: 600;
   display: inline-block;
   transition: 0.3s ease-in-out;
-  border-bottom: #00458f solid 2px;
+  border-bottom: #184ecd solid 2px;
 }
 
 #schedule .card .readmore:hover {
@@ -1362,14 +1362,14 @@ h1, h2, h3, h4, h5, h6 {
 # Footer
 --------------------------------------------------------------*/
 #footer {
-  background: #00428a;
+  background: #184ecd;
   padding: 0 0 30px 0;
   color: #eee;
   font-size: 14px;
 }
 
 #footer .footer-top {
-  background: #004a99;
+  background: #1545B3;
   padding: 60px 0 30px 0;
 }
 
