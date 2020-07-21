@@ -43,7 +43,7 @@
 
       <nav class="main-nav float-right d-none d-lg-block">
         <ul>
-          <li class="active"><a href="#">Register</a></li>
+          <li <button type="button" class="btn-get-started scrolito" data-toggle="modal" data-target="#exampleModalCenter">
           <li><a href="#contact">Contact Us</a></li>
           <li><a href="#services">Student Resources</a></li>
           <!-- <li class="drop-down"><a>Course</a>
@@ -88,27 +88,56 @@
 
     <!-- ======= Modal Section ======= -->
 
-    <!-- Modal -->
+    <!-- Modal 1 -->
     <div class="modal fade" id="exampleModalCenter" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
       <div class="modal-dialog modal-dialog-centered" role="document">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title" id="exampleModalLongTitle">Modal title</h5>
+            <h5 class="modal-title" id="exampleModalLongTitle">Register soon before classes fill up!</h5>
             <button type="button" class="close" data-dismiss="modal" aria-label="Close">
               <span aria-hidden="true">&times;</span>
             </button>
           </div>
           <div class="modal-body">
-            ...
+            <div class="cognito">
+<script src="https://www.cognitoforms.com/s/i8ya9E4UaUiJYxDFhQBBsA"></script>
+<script>Cognito.load("forms", { id: "5" });</script>
+</div>
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-            <button type="button" class="btn btn-primary">Save changes</button>
           </div>
         </div>
       </div>
     </div>
-    <!-- ======= End of Modal Section ======= -->
+    <!-- ======= End of Modal 1 Section ======= -->
+
+    <!-- Modal 2 -->
+    <!-- <div class="portfolio-modal mfp-hide" id="portfolio-modal-2">
+      <div class="portfolio-modal-dialog bg-white">
+        <a class="close-button d-none d-md-block portfolio-modal-dismiss" href="#">
+          <i class="fa fa-3x fa-times"></i>
+        </a>
+        <div class="container text-center">
+          <div class="row">
+            <div class="col-lg-8 mx-auto">
+              <h2 class="text-secondary text-uppercase mb-0">Apply for a job with Ace Driving School</h2>
+              <br>
+              <br>
+              <br>
+              <p class="mb-5">Your application will remain on file for 6 months after submitting</p>
+              <a class="btn btn-primary btn-lg rounded-pill portfolio-modal-dismiss" href="">
+                <i class="fa fa-close"></i>
+                Close</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div> -->
+
+    <!-- ======= End of Modal 2 Section ======= -->
+
+
 
     <!-- ======= About Section ======= -->
     <!-- <section id="about">
@@ -226,14 +255,14 @@
           <div class="col-md-6 col-lg-5 offset-lg-1 wow bounceInUp" data-wow-duration="1.4s">
             <div class="box">
               <div class="icon"><i class="ion-ios-analytics-outline" style="color: #ff689b;"></i></div>
-              <h4 class="title"><a href="">Free Pickup & Dropoff</a></h4>
+              <h4 class="title"><p href="">Free Pickup & Dropoff</p></h4>
               <p class="description">Within citiy limits for your in-car training hours</p>
             </div>
           </div>
           <div class="col-md-6 col-lg-5 wow bounceInUp" data-wow-duration="1.4s">
             <div class="box">
               <div class="icon"><i class="ion-ios-bookmarks-outline" style="color: #e9bf06;"></i></div>
-              <h4 class="title"><a href="">MTO Certification</a></h4>
+              <h4 class="title"><p href="">MTO Certification</p></h4>
               <p class="description">Get certified after completing the BDE course</p>
             </div>
           </div>
@@ -241,14 +270,14 @@
           <div class="col-md-6 col-lg-5 offset-lg-1 wow bounceInUp" data-wow-delay="0.1s" data-wow-duration="1.4s">
             <div class="box">
               <div class="icon"><i class="ion-ios-paper-outline" style="color: #3fcdc7;"></i></div>
-              <h4 class="title"><a href="">Student Resources</a></h4>
+              <h4 class="title"><p href="">Student Resources</p></h4>
               <p class="description">Delivering the best learning experince</p>
             </div>
           </div>
           <div class="col-md-6 col-lg-5 wow bounceInUp" data-wow-delay="0.1s" data-wow-duration="1.4s">
             <div class="box">
               <div class="icon"><i class="ion-ios-speedometer-outline" style="color:#41cf2e;"></i></div>
-              <h4 class="title"><a href="">Safe School Vehicles</a></h4>
+              <h4 class="title"><p href="">Safe School Vehicles</p></h4>
               <p class="description">Use our school vehicles for your road test</p>
             </div>
           </div>
@@ -256,14 +285,14 @@
           <div class="col-md-6 col-lg-5 offset-lg-1 wow bounceInUp" data-wow-delay="0.2s" data-wow-duration="1.4s">
             <div class="box">
               <div class="icon"><i class="ion-ios-world-outline" style="color: #d6ff22;"></i></div>
-              <h4 class="title"><a href="">Online Classes</a></h4>
+              <h4 class="title"><p href="">Online Classes</p></h4>
               <p class="description">Learn online using our virtual classrooms</p>
             </div>
           </div>
           <div class="col-md-6 col-lg-5 wow bounceInUp" data-wow-delay="0.2s" data-wow-duration="1.4s">
             <div class="box">
               <div class="icon"><i class="ion-ios-clock-outline" style="color: #4680ff;"></i></div>
-              <h4 class="title"><a href="">In-car Training</a></h4>
+              <h4 class="title"><p href="">In-car Training</p></h4>
               <p class="description">Hourly training with qualified instructors</p>
             </div>
           </div>
@@ -319,7 +348,7 @@
 
           <div class="col-lg-3 col-6 text-center">
             <span data-toggle="counter-up">20</span>
-            <p>Hours<br>Virtual Classroom</p>
+            <p>Hours<br>In Classroom</p>
           </div>
 
           <div class="col-lg-3 col-6 text-center">
@@ -470,12 +499,12 @@
 
             <div class="form">
               <div class="text-center text-primary">
-              <h3>Register Now Spots are Limited<h3>
+              <h3>Contact Us<h3>
 </div>
-              <iframe src="https://services.cognitoforms.com/f/i8ya9E4UaUiJYxDFhQBBsA?id=5" style="position:relative;width:1px;min-width:100%;*width:100%;" frameborder="0" scrolling="yes" seamless="seamless" height="480" width="100%"></iframe>
-              <script src="https://services.cognitoforms.com/scripts/embed.js"></script>          </div>
-
+<iframe src="https://www.cognitoforms.com/f/i8ya9E4UaUiJYxDFhQBBsA?id=11" style="position:relative;width:1px;min-width:100%;*width:100%;" frameborder="0" scrolling="yes" seamless="seamless" height="512" width="100%"></iframe>
+<script src="https://www.cognitoforms.com/scripts/embed.js"></script>
         </div>
+
       </div>
     </section><!-- End Contact Section -->
 
@@ -487,29 +516,27 @@
       <div class="container">
         <div class="row">
 
-          <div class="col-lg-4 col-md-6 footer-info">
+          <div class="col-lg-4 col-md-4 footer-info">
             <h3>Local Leader</h3>
-            <p>Our highly competent – university graduate driving instructors developed
-and obtained MTO-Approval for ACE Driving School Beginner Driver
-Education Curriculum.  Our BDE curriculum meets all MTO Standards,
+            <p>Our BDE curriculum meets all MTO Standards,
 addresses local traffic safety issues and prepares our graduates to pass
 the road-tests.  Unlike other driving schools, we have no curriculum royalty
 or corporate fees to pay.  Those cost savings are being passed on to
 our students in the form of reduced course fees.</p>
           </div>
 
-          <div class="col-lg-3 col-md-6 footer-links">
+          <div class="col-lg-4 col-md-4 footer-links">
             <h4>Useful Links</h4>
             <ul>
               <li><a href="#">Home</a></li>
               <li><a href="#">About us</a></li>
               <li><a href="#">Student Services</a></li>
               <li><a href="#">Terms of service</a></li>
-              <li><a href="#">Careers</a></li>
+              <li><a href="careers.html">Careers</a></li>
             </ul>
           </div>
 
-          <div class="col-lg-3 col-md-6 footer-contact">
+          <div class="col-lg-4 col-md-4 footer-contact">
             <h4>Contact Us</h4>
             <p>
               278 Tecumseh Rd E <br>
@@ -519,9 +546,9 @@ our students in the form of reduced course fees.</p>
               <strong>Email:</strong> info@acedrivingschool.com<br>
             </p>
 
-            <div class="social-links">
+            <!-- <div class="social-links">
               <a href="#" class="facebook"><i class="fa fa-facebook"></i></a>
-            </div>
+            </div> -->
 
           </div>
 
@@ -558,6 +585,11 @@ our students in the form of reduced course fees.</p>
 
   <!-- Template Main JS File -->
   <script src="assets/js/main.js"></script>
+
+  <!-- Added for Modal -->
+  <script src="vendor/magnific-popup/jquery.magnific-popup.min.js"></script>
+  <script src="js/freelancer.min.js"></script>
+
 
 </body>
 
