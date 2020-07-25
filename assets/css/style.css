@@ -1454,7 +1454,7 @@ h1, h2, h3, h4, h5, h6 {
 # ADDED
 --------------------------------------------------------------*/
 a:visited {
-  color: rgb(211, 78, 204);
+  color: #666;
 }
 
 #exampleModalCenter .modal-header h3 {
