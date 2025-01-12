@@ -1515,3 +1515,94 @@ nav > div a.nav-item.nav-link:focus
     border-radius:0;
     transition:background 0.20s linear;
 }
+/* Import a cursive font for the sale label */
+@import url('https://fonts.googleapis.com/css2?family=Dancing+Script&display=swap');
+
+.intro-img {
+    /* You can add styles for the image container here */
+    text-align: center; /* Center the content */
+    padding: 20px;
+}
+
+.price-container {
+    position: relative;
+    display: inline-block;
+    text-align: center;
+    width: 300px; /* Control the width of the container */
+}
+
+.price-text {
+    position: relative;
+}
+
+.regular-price {
+    color: white;
+    text-decoration: line-through;
+    font-size: 20px;
+    display: block;
+    margin-bottom: 10px; /* Space between regular price and sale label */
+}
+
+.sale-label {
+    font-size: 20px; /* Same size as regular price */
+    color: yellow; /* Sale label in yellow */
+    position: absolute;
+    left: -10px; /* Adjusted to bring it even closer to the sale price */
+    top: 30%; /* Adjusted to be just below the regular price and closer to the sale price */
+    transform: translateY(-50%) rotate(-45deg); /* Rotate 45 degrees counter-clockwise */
+    transform-origin: bottom left; /* Ensures rotation starts from the bottom */
+    font-family: 'Dancing Script', cursive; /* Apply cursive/fancy font to sale label */
+}
+
+.sale-price {
+    color: red; /* Sale price color */
+    font-size: 50px; /* Larger than everything else */
+    font-weight: bold;
+    display: inline-block;
+    margin-top: 10px;
+    margin-left: 15px; /* Added margin to move the sale price 15px to the right */
+}
+
+.hst {
+    font-size: 20px; /* Smaller font for the HST */
+    color: yellow; /* Yellow color for +HST */
+    display: inline-block;
+    margin-left: 5px; /* Space between price and +HST */
+    vertical-align: middle; /* Aligns with the middle of the sale price */
+}
+
+.validity {
+    color: white;
+    font-size: 20px;
+    display: block;
+    margin-top: 10px;
+    white-space: nowrap; /* Prevent line break */
+}
+
+.in-class {
+    color: green; /* Green color for In Class price */
+    font-size: 20px; /* Same size as other prices */
+    display: block;
+    margin-top: 10px; /* Space below the validity text */
+}
+
+.course-name {
+    color: white; /* White text for the course name */
+    font-size: 20px; /* Same size as the other text */
+    display: block;
+    margin-top: 10px; /* Space below the In Class price */
+}
+
+/* New yellow lines */
+.additional-info {
+    color: yellow; /* Yellow color */
+    font-size: 18px; /* Slightly smaller text */
+    display: block;
+    margin-top: 10px;
+}
+
+#regular-price, #sale-label, #sale-price, #hst, #validity, #in-class, #course-name, #additional-info1, #additional-info2 {
+  display: inline-block; /* Ensure the elements are displayed */
+  opacity: 1; /* Ensure the text is visible */
+  visibility: visible; /* Ensure the elements are not hidden */
+}

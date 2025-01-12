@@ -1,9 +1,3 @@
-/**
-* Template Name: NewBiz - v2.0.0
-* Template URL: https://bootstrapmade.com/newbiz-bootstrap-business-template/
-* Author: BootstrapMade.com
-* License: https://bootstrapmade.com/license/
-*/
 (function($) {
   "use strict";
 
@@ -24,6 +18,7 @@
       $('.back-to-top').fadeOut('slow');
     }
   });
+
   $('.back-to-top').click(function() {
     $('html, body').animate({
       scrollTop: 0
@@ -50,9 +45,9 @@
   // Smooth scroll for the navigation and links with .scrollto classes
   $('.main-nav a, .mobile-nav a, .scrollto').on('click', function() {
     if (location.pathname.replace(/^\//, '') == this.pathname.replace(/^\//, '') && location.hostname == this.hostname) {
-      var target = $(this.hash);
+      const target = $(this.hash);
       if (target.length) {
-        var top_space = 0;
+        let top_space = 0;
 
         if ($('#header').length) {
           top_space = $('#header').outerHeight();
@@ -82,15 +77,15 @@
   });
 
   // Navigation active state on scroll
-  var nav_sections = $('section');
-  var main_nav = $('.main-nav, .mobile-nav');
-  var main_nav_height = $('#header').outerHeight();
+  const nav_sections = $('section');
+  const main_nav = $('.main-nav, .mobile-nav');
+  const main_nav_height = $('#header').outerHeight();
 
   $(window).on('scroll', function() {
-    var cur_pos = $(this).scrollTop();
+    const cur_pos = $(this).scrollTop();
 
     nav_sections.each(function() {
-      var top = $(this).offset().top - main_nav_height,
+      const top = $(this).offset().top - main_nav_height,
         bottom = top + $(this).outerHeight();
 
       if (cur_pos >= top && cur_pos <= bottom) {
@@ -100,15 +95,15 @@
     });
   });
 
-  // jQuery counterUp (used in Whu Us section)
+  // jQuery counterUp (used in Why Us section)
   $('[data-toggle="counter-up"]').counterUp({
     delay: 10,
     time: 1000
   });
 
-  // Porfolio isotope and filter
+  // Portfolio isotope and filter
   $(window).on('load', function() {
-    var portfolioIsotope = $('.portfolio-container').isotope({
+    const portfolioIsotope = $('.portfolio-container').isotope({
       itemSelector: '.portfolio-item'
     });
     $('#portfolio-flters li').on('click', function() {
@@ -121,7 +116,7 @@
     });
   });
 
-  // Initiate venobox (lightbox feature used in portofilo)
+  // Initiate venobox (lightbox feature used in portfolio)
   $(document).ready(function() {
     $('.venobox').venobox();
   });
@@ -134,17 +129,71 @@
     items: 1
   });
 
-  // Modal popup$(function () {
-$('.portfolio-item').magnificPopup({
-  type: 'inline',
-  preloader: false,
-  focus: '#username',
-  modal: true
-});
-$(document).on('click', '.portfolio-modal-dismiss', function(e) {
-  e.preventDefault();
-  $.magnificPopup.close();
-});
 
+  // Add the CSV fetch and parsing logic here
+  async function fetchCSVData() {
+    try {
+      const response = await fetch('https://docs.google.com/spreadsheets/d/e/2PACX-1vTGFypKKaBXxRgUX3Vip2YzseORYRUACHHLeq3UTmL2_AZ2NJYK2MFzJdbgZ7kmnRZ3eCnDPy6fylC3/pub?output=csv');
+      if (!response.ok) {
+        throw new Error('Failed to fetch CSV');
+      }
+      const data = await response.text();
+      parseCSVData(data);
+    } catch (error) {
+      console.error('Error loading CSV:', error);
+    }
+  }
+
+  function parseCSVData(csvData) {
+    const rows = csvData.split('\n');
+    let additionalInfoCount = 1; // Track additional info entries (additional-info1, additional-info2, etc.)
+
+    rows.forEach(row => {
+      const columns = row.split(',');
+
+      // Ignore empty rows or rows without valid data
+      if (columns.length < 2) return;
+
+      const className = columns[0].trim();
+      let textValue = columns[1].trim().replace(/\"/g, ''); // Remove any quotes around the text
+
+      // Update HTML elements based on class names
+      switch (className) {
+        case 'regular-price':
+          document.getElementById('regular-price').textContent = textValue;
+          break;
+        case 'sale-label':
+          document.getElementById('sale-label').textContent = textValue;
+          break;
+        case 'sale-price':
+          document.getElementById('sale-price').textContent = textValue;
+          break;
+        case 'hst':
+          document.getElementById('hst').textContent = textValue;
+          break;
+        case 'validity':
+          document.getElementById('validity').textContent = textValue;
+          break;
+        case 'in-class':
+          document.getElementById('in-class').textContent = textValue;
+          break;
+        case 'course-name':
+          document.getElementById('course-name').textContent = textValue;
+          break;
+        case 'additional-info':
+          const additionalInfoElement = document.getElementById(`additional-info${additionalInfoCount}`);
+          if (additionalInfoElement) {
+            additionalInfoElement.textContent = textValue;
+          }
+          additionalInfoCount++;
+          break;
+      }
+    });
+  }
+
+  // Ensure the CSV data is loaded after the DOM is ready
+  $(document).ready(function() {
+    fetchCSVData(); // Call the fetch function to load the data
+  });
 
 })(jQuery);
