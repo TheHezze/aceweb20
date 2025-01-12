@@ -1560,7 +1560,7 @@ nav > div a.nav-item.nav-link:focus
     font-weight: bold;
     display: inline-block;
     margin-top: 10px;
-    margin-left: 15px; /* Added margin to move the sale price 15px to the right */
+    margin-left: 20px; /* Added margin to move the sale price 15px to the right */
 }
 
 .hst {
