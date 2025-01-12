@@ -1576,12 +1576,11 @@ nav > div a.nav-item.nav-link:focus
     font-size: 20px;
     display: block;
     margin-top: 10px;
-    white-space: nowrap; /* Prevent line break */
 }
 
 .in-class {
-    color: green; /* Green color for In Class price */
-    font-size: 20px; /* Same size as other prices */
+    color: rgb(61, 171, 61); /* Green color for In Class price */
+    font-size: 25px; /* Same size as other prices */
     display: block;
     margin-top: 10px; /* Space below the validity text */
 }
