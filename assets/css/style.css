@@ -1556,7 +1556,7 @@ nav > div a.nav-item.nav-link:focus
 
 .sale-price {
     color: red; /* Sale price color */
-    font-size: 60px; /* Larger than everything else */
+    font-size: 54px; /* Larger than everything else */
     font-weight: bold;
     display: inline-block;
     margin-top: 10px;
