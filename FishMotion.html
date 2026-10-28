@@ -1,0 +1,1536 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Abyssal Reef — Interactive RGB Motion Fish Aquarium</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #02101e;
+            font-family: 'Inter', sans-serif;
+            color: #f0f9ff;
+        }
+        .font-aqua {
+            font-family: 'Fredoka', sans-serif;
+            letter-spacing: 0.03em;
+        }
+        #aquariumCanvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+            cursor: crosshair;
+        }
+        .hud-glass {
+            background: rgba(4, 23, 43, 0.82);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(56, 189, 248, 0.28);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.75), 0 0 25px rgba(14, 165, 233, 0.15);
+        }
+        input[type="range"] {
+            accent-color: #06b6d4;
+        }
+        #hudPanel::-webkit-scrollbar {
+            width: 6px;
+        }
+        #hudPanel::-webkit-scrollbar-track {
+            background: rgba(3, 18, 34, 0.4);
+        }
+        #hudPanel::-webkit-scrollbar-thumb {
+            background: rgba(56, 189, 248, 0.4);
+            border-radius: 9999px;
+        }
+    </style>
+</head>
+<body class="relative w-screen h-screen overflow-hidden select-none">
+
+    <!-- Primary Fullscreen Aquarium Canvas -->
+    <canvas id="aquariumCanvas"></canvas>
+
+    <!-- Hidden Video Element for Live Webcam RGB Stream -->
+    <video id="webcamVideo" playsinline autoplay muted class="hidden"></video>
+
+    <!-- Top-Left Ambient Status & Quick Toggle Bar (Starts completely hidden) -->
+    <div id="topLeftBar" class="fixed top-4 left-4 z-30 flex items-center gap-2.5 opacity-0 pointer-events-none transition-all duration-300">
+        <button id="toggleHudBtn" class="hud-glass px-3.5 py-2.5 rounded-xl flex items-center gap-2 text-sm font-medium text-cyan-300 hover:text-cyan-200 hover:border-cyan-400/60 transition-all shadow-lg" title="Toggle Control Panel (Shortcut: H or Double-Click)">
+            <i class="ph-fill ph-sliders-horizontal text-lg text-cyan-400"></i>
+            <span id="toggleHudText">Aquarium Controls</span>
+        </button>
+
+        <div id="statusBadge" class="hud-glass px-3.5 py-2 rounded-xl flex items-center gap-2 text-xs font-medium border border-cyan-500/30">
+            <span id="statusDot" class="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-ping"></span>
+            <span id="statusDotSolid" class="w-2.5 h-2.5 rounded-full bg-cyan-400 -ml-4"></span>
+            <span id="statusLabel" class="text-cyan-200">Initializing RGB Camera...</span>
+        </div>
+    </div>
+
+    <!-- Top-Right Quick Action Buttons (Starts completely hidden) -->
+    <div id="topRightBar" class="fixed top-4 right-4 z-30 flex items-center gap-2.5 opacity-0 pointer-events-none transition-all duration-300">
+        <button id="flipCameraQuickBtn" class="hud-glass px-3.5 py-2.5 rounded-xl flex items-center gap-2 text-xs sm:text-sm font-medium text-teal-300 hover:text-white hover:border-teal-400/60 transition-all" title="Inverse Camera Left/Right (Shortcut: F1)">
+            <i class="ph-bold ph-arrows-left-right text-teal-400 text-lg"></i>
+            <span id="flipQuickLabel" class="hidden sm:inline">L/R: Mirrored</span>
+        </button>
+        <button id="feedBtn" class="hud-glass px-3.5 py-2.5 rounded-xl flex items-center gap-2 text-xs sm:text-sm font-medium text-amber-300 hover:text-white hover:border-amber-400/60 transition-all" title="Drop Fish Food & Bubble Surge (Shortcut: Space)">
+            <i class="ph-fill ph-drop text-cyan-400 text-lg"></i>
+            <span class="hidden sm:inline">Feed & Bubble Wave</span>
+        </button>
+        <button id="audioToggleBtn" class="hud-glass px-3.5 py-2.5 rounded-xl flex items-center gap-2 text-xs sm:text-sm font-medium text-slate-300 hover:text-white hover:border-cyan-400/60 transition-all" title="Toggle Procedural Underwater Ambient Audio">
+            <i id="audioIcon" class="ph-fill ph-speaker-slash text-slate-400 text-lg"></i>
+            <span id="audioLabel" class="hidden sm:inline">Sound Off</span>
+        </button>
+    </div>
+
+    <!-- Main Toggleable HUD Control Panel (Starts completely hidden) -->
+    <aside id="hudPanel" class="fixed top-16 left-4 z-30 w-80 sm:w-96 max-h-[calc(100vh-5rem)] overflow-y-auto hud-glass rounded-2xl p-5 transition-all duration-300 opacity-0 -translate-x-8 pointer-events-none">
+        <!-- Header -->
+        <div class="flex items-center justify-between pb-3 mb-4 border-b border-cyan-500/20">
+            <div class="flex items-center gap-2.5">
+                <i class="ph-fill ph-fish-simple text-2xl text-cyan-400"></i>
+                <div>
+                    <h1 class="font-aqua text-2xl text-cyan-300 leading-none">Abyssal Reef</h1>
+                    <p class="text-[11px] text-slate-400 mt-0.5">Interactive RGB Motion Fish Aquarium</p>
+                </div>
+            </div>
+            <button id="closeHudBtn" class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors" title="Hide HUD (Shortcut: H or Double-Click)">
+                <i class="ph-bold ph-x text-base"></i>
+            </button>
+        </div>
+
+        <!-- Camera Control, Left/Right Inversion & Live RGB Diff Radar -->
+        <div class="space-y-2.5 mb-5">
+            <button id="cameraToggleBtn" class="w-full py-2.5 px-4 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white shadow-lg shadow-cyan-950/50 transition-all">
+                <i id="cameraBtnIcon" class="ph-fill ph-video-camera text-lg"></i>
+                <span id="cameraBtnText">Start RGB Camera Motion</span>
+            </button>
+
+            <button id="flipCameraBtn" class="w-full py-2 px-3.5 rounded-xl font-medium text-xs flex items-center justify-between border border-teal-500/35 bg-teal-950/40 hover:bg-teal-900/50 text-teal-200 transition-all" title="Press F1 to invert left and right camera motion">
+                <span class="flex items-center gap-2">
+                    <i class="ph-bold ph-arrows-left-right text-teal-400 text-sm"></i>
+                    <span>Camera Left / Right:</span>
+                </span>
+                <span id="flipStatusBadge" class="px-2 py-0.5 rounded bg-teal-500/20 text-teal-300 font-mono text-[11px]">
+                    Mirrored (Press F1)
+                </span>
+            </button>
+
+            <div class="relative rounded-xl overflow-hidden border border-cyan-500/25 bg-black/70 aspect-[4/3]">
+                <canvas id="radarCanvas" width="160" height="120" class="w-full h-full object-cover"></canvas>
+                <div class="absolute top-2 left-2 px-2 py-0.5 rounded bg-black/70 text-[10px] font-mono text-cyan-300 border border-cyan-500/20" id="radarHeaderLabel">
+                    RGB Δ-SONAR (80×60 • MIRROR)
+                </div>
+                <div class="absolute bottom-2 right-2 px-2 py-0.5 rounded bg-black/70 text-[10px] font-mono text-emerald-300" id="motionMeterText">
+                    Current: 0%
+                </div>
+            </div>
+        </div>
+
+        <!-- Motion & Visual Sliders -->
+        <div class="space-y-4 text-xs">
+            <div>
+                <div class="flex justify-between mb-1">
+                    <label for="sensitivitySlider" class="text-slate-300 font-medium">RGB Water Current Sensitivity</label>
+                    <span id="sensitivityVal" class="text-cyan-400 font-mono">65%</span>
+                </div>
+                <input id="sensitivitySlider" type="range" min="15" max="95" value="65" class="w-full h-1.5 bg-slate-800 rounded-lg cursor-pointer">
+            </div>
+
+            <div>
+                <div class="flex justify-between mb-1">
+                    <label for="rgbTrailSlider" class="text-slate-300 font-medium">Bioluminescent RGB Ripple Trail</label>
+                    <span id="rgbTrailVal" class="text-cyan-400 font-mono">45%</span>
+                </div>
+                <input id="rgbTrailSlider" type="range" min="0" max="100" value="45" class="w-full h-1.5 bg-slate-800 rounded-lg cursor-pointer">
+            </div>
+
+            <div>
+                <div class="flex justify-between mb-1">
+                    <label for="entityDensitySlider" class="text-slate-300 font-medium">Fish School & Reef Density</label>
+                    <span id="entityDensityVal" class="text-cyan-400 font-mono">100%</span>
+                </div>
+                <input id="entityDensitySlider" type="range" min="40" max="180" value="100" class="w-full h-1.5 bg-slate-800 rounded-lg cursor-pointer">
+            </div>
+
+            <!-- Fish Behavior Mode -->
+            <div>
+                <label class="block text-slate-300 font-medium mb-1.5">Fish School Motion Response</label>
+                <div class="grid grid-cols-3 gap-1.5" id="fishModeGroup">
+                    <button data-mode="school" class="fish-mode-btn py-1.5 px-2 rounded-lg font-medium border border-cyan-500/60 bg-cyan-500/20 text-cyan-200 transition-all">
+                        Vortex School
+                    </button>
+                    <button data-mode="attract" class="fish-mode-btn py-1.5 px-2 rounded-lg font-medium border border-white/10 bg-white/5 text-slate-300 hover:bg-white/10 transition-all">
+                        Curious (Flock)
+                    </button>
+                    <button data-mode="scatter" class="fish-mode-btn py-1.5 px-2 rounded-lg font-medium border border-white/10 bg-white/5 text-slate-300 hover:bg-white/10 transition-all">
+                        Shy (Scatter)
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer Legend -->
+        <div class="mt-5 pt-3 border-t border-white/10 flex flex-wrap items-center justify-between gap-1 text-[11px] text-slate-400">
+            <span><kbd class="px-1.5 py-0.5 bg-white/10 rounded text-slate-200">F1</kbd> Flip L/R</span>
+            <span><kbd class="px-1.5 py-0.5 bg-white/10 rounded text-slate-200">F11</kbd> Fullscreen</span>
+            <span><kbd class="px-1.5 py-0.5 bg-white/10 rounded text-slate-200">H</kbd> / <kbd class="px-1.5 py-0.5 bg-white/10 rounded text-slate-200">Dbl-Click</kbd> UI</span>
+            <span><kbd class="px-1.5 py-0.5 bg-white/10 rounded text-slate-200">Space</kbd> Feed</span>
+        </div>
+    </aside>
+
+    <script>
+        /**
+         * ABYSSAL REEF — Interactive RGB Webcam Motion Fish Aquarium
+         * Features:
+         * - Real-time getUserMedia RGB frame-differencing on an 80x60 grid
+         * - Instant Left/Right camera inversion via the F1 key (leaving F11 for Fullscreen)
+         * - Starts with camera ON and all screen UI hidden by default
+         * - Articulated multi-species fish schools, pulsing jellyfish, swaying kelp,
+         *   interactive giant clam, caustic sun rays, bubbles, and mouse/touch fallback.
+         */
+        function initAquariumScene() {
+            const canvas = document.getElementById('aquariumCanvas');
+            const ctx = canvas.getContext('2d');
+            const video = document.getElementById('webcamVideo');
+            const radarCanvas = document.getElementById('radarCanvas');
+            const radarCtx = radarCanvas.getContext('2d');
+
+            // Offscreen low-res canvas for fast RGB frame differencing
+            const GRID_W = 80;
+            const GRID_H = 60;
+            const procCanvas = document.createElement('canvas');
+            procCanvas.width = GRID_W;
+            procCanvas.height = GRID_H;
+            const procCtx = procCanvas.getContext('2d', { willReadFrequently: true });
+
+            // Offscreen bioluminescent RGB trail buffer
+            const trailCanvas = document.createElement('canvas');
+            trailCanvas.width = GRID_W;
+            trailCanvas.height = GRID_H;
+            const trailCtx = trailCanvas.getContext('2d');
+
+            // Central reactive application state
+            const state = {
+                width: window.innerWidth,
+                height: window.innerHeight,
+                time: 0,
+                cameraActive: false,
+                cameraStarting: false,
+                mirrorCamera: true, // True = normal mirror, False = inverted left/right (toggled via F1)
+                stream: null,
+                prevFrameData: null,
+                sensitivity: 65,      // 15..95
+                rgbTrailOpacity: 0.45,// 0..1
+                densityScale: 1.0,    // 0.4..1.8
+                fishMode: 'school',   // 'school' | 'attract' | 'scatter'
+                hudVisible: false,    // Starts with all screen info hidden
+                audioEnabled: false,
+                audioCtx: null,
+                masterGain: null,
+
+                // Smoothed primary motion hotspot (normalized 0..1 and screen px)
+                hotspot: {
+                    x: window.innerWidth * 0.5,
+                    y: window.innerHeight * 0.45,
+                    vx: 0,
+                    vy: 0,
+                    intensity: 0,
+                    active: false
+                },
+                // Array of localized motion clusters each frame
+                motionPoints: [],
+
+                // Pointer fallback state
+                pointer: {
+                    x: window.innerWidth * 0.5,
+                    y: window.innerHeight * 0.45,
+                    prevX: window.innerWidth * 0.5,
+                    prevY: window.innerHeight * 0.45,
+                    speed: 0,
+                    lastMoveTime: 0
+                },
+
+                // Scene entities
+                lightRays: [],
+                corals: [],
+                kelps: [],
+                fishes: [],
+                jellies: [],
+                bubbles: [],
+                foodPellets: [],
+                plankton: [],
+                clam: {
+                    x: window.innerWidth * 0.72,
+                    y: window.innerHeight * 0.9,
+                    openAmount: 0.25,
+                    targetOpen: 0.25,
+                    pearlGlow: 0.5,
+                    bubbleCooldown: 0
+                },
+                surgeFlash: 0
+            };
+
+            const FISH_SPECIES = [
+                {
+                    name: 'Clownfish',
+                    bodyColor: '#f97316',
+                    finColor: '#fb923c',
+                    stripeColor: '#ffffff',
+                    accentColor: '#1e293b',
+                    baseSize: 22,
+                    speedMult: 1.05
+                },
+                {
+                    name: 'Blue Tang',
+                    bodyColor: '#0284c7',
+                    finColor: '#facc15',
+                    stripeColor: '#0f172a',
+                    accentColor: '#38bdf8',
+                    baseSize: 25,
+                    speedMult: 1.12
+                },
+                {
+                    name: 'Neon Tetra',
+                    bodyColor: '#06b6d4',
+                    finColor: '#f43f5e',
+                    stripeColor: '#a5f3fc',
+                    accentColor: '#0891b2',
+                    baseSize: 15,
+                    speedMult: 1.28
+                },
+                {
+                    name: 'Golden Angelfish',
+                    bodyColor: '#eab308',
+                    finColor: '#fef08a',
+                    stripeColor: '#ca8a04',
+                    accentColor: '#fde047',
+                    baseSize: 27,
+                    speedMult: 0.92
+                },
+                {
+                    name: 'Royal Gramma',
+                    bodyColor: '#a855f7',
+                    finColor: '#facc15',
+                    stripeColor: '#fde047',
+                    accentColor: '#7e22ce',
+                    baseSize: 20,
+                    speedMult: 1.0
+                }
+            ];
+
+            // ============================================================================
+            // PROCEDURAL WEB AUDIO SYNTHESIZER (Underwater Drone & Bubble Chimes)
+            // ============================================================================
+            function initAudio() {
+                if (state.audioCtx) return;
+                try {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    state.audioCtx = new AudioContext();
+                    state.masterGain = state.audioCtx.createGain();
+                    state.masterGain.gain.value = 0.16;
+                    state.masterGain.connect(state.audioCtx.destination);
+
+                    // Deep ocean warm sub-drone
+                    const osc1 = state.audioCtx.createOscillator();
+                    const osc2 = state.audioCtx.createOscillator();
+                    const filter = state.audioCtx.createBiquadFilter();
+
+                    osc1.type = 'sine';
+                    osc1.frequency.value = 64;
+                    osc2.type = 'triangle';
+                    osc2.frequency.value = 96;
+
+                    filter.type = 'lowpass';
+                    filter.frequency.value = 180;
+
+                    const lfo = state.audioCtx.createOscillator();
+                    const lfoGain = state.audioCtx.createGain();
+                    lfo.frequency.value = 0.12;
+                    lfoGain.gain.value = 50;
+                    lfo.connect(filter.frequency);
+
+                    osc1.connect(filter);
+                    osc2.connect(filter);
+                    filter.connect(state.masterGain);
+
+                    osc1.start();
+                    osc2.start();
+                    lfo.start();
+                } catch (e) {
+                    console.warn('Web Audio API unavailable:', e);
+                }
+            }
+
+            function playBubbleSound(freqBase = 480) {
+                if (!state.audioEnabled || !state.audioCtx) return;
+                try {
+                    const now = state.audioCtx.currentTime;
+                    const osc = state.audioCtx.createOscillator();
+                    const gain = state.audioCtx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freqBase, now);
+                    osc.frequency.exponentialRampToValueAtTime(freqBase * 2.1, now + 0.14);
+
+                    gain.gain.setValueAtTime(0.08, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+
+                    osc.connect(gain);
+                    gain.connect(state.masterGain);
+                    osc.start(now);
+                    osc.stop(now + 0.16);
+                } catch (e) {
+                    // Ignore audio scheduling errors
+                }
+            }
+
+            // ============================================================================
+            // AQUARIUM SCENE INITIALIZATION & ENTITY GENERATORS
+            // ============================================================================
+            function initSceneEntities() {
+                const w = state.width;
+                const h = state.height;
+
+                // 1. Caustic Sun Rays
+                state.lightRays = [];
+                for (let i = 0; i < 11; i++) {
+                    state.lightRays.push({
+                        x: (w / 10) * i + (Math.random() - 0.5) * 80,
+                        width: 65 + Math.random() * 110,
+                        angle: -0.18 + Math.random() * 0.12,
+                        alpha: 0.04 + Math.random() * 0.06,
+                        speed: 0.35 + Math.random() * 0.45,
+                        phase: Math.random() * Math.PI * 2
+                    });
+                }
+
+                // 2. Background Reef Coral Outcrops
+                state.corals = [];
+                const coralColors = ['#e11d48', '#db2777', '#9333ea', '#0284c7', '#0d9488', '#ea580c'];
+                const coralCount = Math.max(8, Math.floor(w / 140));
+                for (let i = 0; i < coralCount; i++) {
+                    state.corals.push({
+                        x: (w / coralCount) * (i + 0.5) + (Math.random() - 0.5) * 50,
+                        y: h - 25 - Math.random() * 35,
+                        radius: 28 + Math.random() * 38,
+                        branches: 4 + Math.floor(Math.random() * 4),
+                        color: coralColors[i % coralColors.length],
+                        seed: Math.random() * 100
+                    });
+                }
+
+                // 3. Giant Pearl Clam Position
+                state.clam.x = w * 0.74;
+                state.clam.y = h - 38;
+
+                // 4. Floating Plankton Specks
+                state.plankton = [];
+                for (let i = 0; i < 95; i++) {
+                    state.plankton.push({
+                        x: Math.random() * w,
+                        y: Math.random() * h,
+                        r: 0.8 + Math.random() * 2.0,
+                        alpha: 0.18 + Math.random() * 0.45,
+                        vx: (Math.random() - 0.5) * 0.25,
+                        vy: (Math.random() - 0.5) * 0.2,
+                        hue: 175 + Math.random() * 45
+                    });
+                }
+
+                syncDynamicEntities();
+            }
+
+            function syncDynamicEntities() {
+                const w = state.width;
+                const h = state.height;
+
+                // Swaying Kelp Forest
+                const targetKelp = Math.round(14 * state.densityScale);
+                while (state.kelps.length < targetKelp) {
+                    state.kelps.push({
+                        baseX: Math.random() * w,
+                        baseY: h - 15 - Math.random() * 25,
+                        segments: 9 + Math.floor(Math.random() * 6),
+                        segLen: (h * (0.18 + Math.random() * 0.26)) / 12,
+                        phase: Math.random() * Math.PI * 2,
+                        bendVel: 0,
+                        bendOffset: 0,
+                        hue: 135 + Math.random() * 32
+                    });
+                }
+                if (state.kelps.length > targetKelp) state.kelps.length = targetKelp;
+
+                // Multi-Species Fish School
+                const targetFishes = Math.round(32 * state.densityScale);
+                while (state.fishes.length < targetFishes) {
+                    const sp = FISH_SPECIES[Math.floor(Math.random() * FISH_SPECIES.length)];
+                    const dir = Math.random() < 0.5 ? 1 : -1;
+                    state.fishes.push({
+                        species: sp,
+                        x: Math.random() * w,
+                        y: h * (0.12 + Math.random() * 0.7),
+                        vx: dir * (1.2 + Math.random() * 1.5) * sp.speedMult,
+                        vy: (Math.random() - 0.5) * 0.7,
+                        size: sp.baseSize * (0.78 + Math.random() * 0.45),
+                        tailPhase: Math.random() * Math.PI * 2,
+                        tailSpeed: 0.16 + Math.random() * 0.08,
+                        facingLeft: dir < 0
+                    });
+                }
+                if (state.fishes.length > targetFishes) state.fishes.length = targetFishes;
+
+                // Bioluminescent Jellyfish
+                const targetJellies = Math.round(6 * state.densityScale);
+                while (state.jellies.length < targetJellies) {
+                    state.jellies.push({
+                        x: Math.random() * w,
+                        y: h * (0.15 + Math.random() * 0.65),
+                        vx: (Math.random() - 0.5) * 0.4,
+                        vy: -0.35 - Math.random() * 0.35,
+                        radius: 20 + Math.random() * 16,
+                        pulsePhase: Math.random() * Math.PI * 2,
+                        hue: 185 + Math.random() * 115,
+                        glowBoost: 0
+                    });
+                }
+                if (state.jellies.length > targetJellies) state.jellies.length = targetJellies;
+            }
+
+            function spawnBubble(x, y, vx = 0, vy = -1.5, r = 4) {
+                if (state.bubbles.length > 260) return;
+                state.bubbles.push({
+                    x: x + (Math.random() - 0.5) * 14,
+                    y: y + (Math.random() - 0.5) * 14,
+                    vx: vx + (Math.random() - 0.5) * 1.1,
+                    vy: vy - Math.random() * 1.6,
+                    r: r * (0.65 + Math.random() * 0.75),
+                    wobblePhase: Math.random() * Math.PI * 2,
+                    alpha: 0.55 + Math.random() * 0.35
+                });
+            }
+
+            function triggerFeedAndWave() {
+                state.surgeFlash = 0.55;
+                playBubbleSound(360);
+
+                // Drop sinking fish food pellets across the top water surface
+                for (let i = 0; i < 18; i++) {
+                    state.foodPellets.push({
+                        x: state.width * (0.15 + Math.random() * 0.7),
+                        y: 25 + Math.random() * 35,
+                        vx: (Math.random() - 0.5) * 0.6,
+                        vy: 0.9 + Math.random() * 0.7,
+                        r: 3.2 + Math.random() * 1.8,
+                        eaten: false
+                    });
+                }
+
+                // Release a curtain of rising air bubbles from the seabed
+                for (let i = 0; i < 42; i++) {
+                    spawnBubble(
+                        Math.random() * state.width,
+                        state.height - 25,
+                        (Math.random() - 0.5) * 1.5,
+                        -2.2 - Math.random() * 2.5,
+                        3 + Math.random() * 5
+                    );
+                }
+            }
+
+            // ============================================================================
+            // RGB WEBCAM MOTION CAPTURE & FRAME DIFFERENCING (WITH F1 L/R INVERSION)
+            // ============================================================================
+            async function toggleCamera() {
+                if (state.cameraStarting) return;
+
+                if (state.cameraActive) {
+                    stopCamera();
+                    return;
+                }
+
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    updateStatusUI('fallback', 'Webcam API Unsupported — Mouse/Touch Active');
+                    return;
+                }
+
+                state.cameraStarting = true;
+                updateStatusUI('starting', 'Starting RGB Camera...');
+
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({
+                        video: {
+                            width: { ideal: 320 },
+                            height: { ideal: 240 },
+                            facingMode: 'user'
+                        },
+                        audio: false
+                    });
+
+                    state.stream = stream;
+                    video.srcObject = stream;
+                    await video.play();
+
+                    state.cameraActive = true;
+                    state.cameraStarting = false;
+                    state.prevFrameData = null;
+
+                    updateStatusUI('active', 'RGB Camera Active');
+                    const btn = document.getElementById('cameraToggleBtn');
+                    btn.className = 'w-full py-2.5 px-4 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white shadow-lg shadow-rose-950/50 transition-all';
+                    document.getElementById('cameraBtnIcon').className = 'ph-fill ph-video-camera-slash text-lg';
+                    document.getElementById('cameraBtnText').textContent = 'Stop RGB Camera';
+                } catch (err) {
+                    console.warn('Webcam access declined or unavailable, using pointer fallback:', err);
+                    state.cameraActive = false;
+                    state.cameraStarting = false;
+                    updateStatusUI('fallback', 'Mouse / Touch Current Active');
+                }
+            }
+
+            function stopCamera() {
+                if (state.stream) {
+                    state.stream.getTracks().forEach(track => track.stop());
+                    state.stream = null;
+                }
+                video.srcObject = null;
+                state.cameraActive = false;
+                state.prevFrameData = null;
+
+                updateStatusUI('fallback', 'Mouse / Touch Current Active');
+                const btn = document.getElementById('cameraToggleBtn');
+                btn.className = 'w-full py-2.5 px-4 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white shadow-lg shadow-cyan-950/50 transition-all';
+                document.getElementById('cameraBtnIcon').className = 'ph-fill ph-video-camera text-lg';
+                document.getElementById('cameraBtnText').textContent = 'Start RGB Camera Motion';
+            }
+
+            function toggleCameraMirror() {
+                state.mirrorCamera = !state.mirrorCamera;
+                // Clear previous frame buffer so flipping doesn't cause a 1-frame motion spike
+                state.prevFrameData = null;
+
+                const flipStatusBadge = document.getElementById('flipStatusBadge');
+                const flipQuickLabel = document.getElementById('flipQuickLabel');
+                const radarHeaderLabel = document.getElementById('radarHeaderLabel');
+
+                if (state.mirrorCamera) {
+                    flipStatusBadge.textContent = 'Mirrored (Press F1)';
+                    flipStatusBadge.className = 'px-2 py-0.5 rounded bg-teal-500/20 text-teal-300 font-mono text-[11px]';
+                    flipQuickLabel.textContent = 'L/R: Mirrored';
+                    radarHeaderLabel.textContent = 'RGB Δ-SONAR (80×60 • MIRROR)';
+                } else {
+                    flipStatusBadge.textContent = 'Inverted L/R (Press F1)';
+                    flipStatusBadge.className = 'px-2 py-0.5 rounded bg-amber-500/25 text-amber-300 font-mono text-[11px]';
+                    flipQuickLabel.textContent = 'L/R: Inverted';
+                    radarHeaderLabel.textContent = 'RGB Δ-SONAR (80×60 • INVERTED)';
+                }
+            }
+
+            function updateStatusUI(mode, message) {
+                const dot = document.getElementById('statusDot');
+                const dotSolid = document.getElementById('statusDotSolid');
+                const label = document.getElementById('statusLabel');
+
+                label.textContent = message;
+                if (mode === 'active') {
+                    dot.className = 'w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping';
+                    dotSolid.className = 'w-2.5 h-2.5 rounded-full bg-emerald-400 -ml-4';
+                    label.className = 'text-emerald-200';
+                } else if (mode === 'starting') {
+                    dot.className = 'w-2.5 h-2.5 rounded-full bg-cyan-400 animate-ping';
+                    dotSolid.className = 'w-2.5 h-2.5 rounded-full bg-cyan-400 -ml-4';
+                    label.className = 'text-cyan-200';
+                } else {
+                    dot.className = 'w-2.5 h-2.5 rounded-full bg-sky-400 animate-ping';
+                    dotSolid.className = 'w-2.5 h-2.5 rounded-full bg-sky-400 -ml-4';
+                    label.className = 'text-sky-200';
+                }
+            }
+
+            function processRgbMotionFrame() {
+                state.motionPoints = [];
+
+                // Fade persistent bioluminescent trail buffer smoothly
+                trailCtx.fillStyle = 'rgba(2, 16, 30, 0.18)';
+                trailCtx.fillRect(0, 0, GRID_W, GRID_H);
+
+                if (state.cameraActive && video.readyState >= 2) {
+                    // Draw video frame onto 80x60 processing canvas, respecting F1 left/right inversion
+                    procCtx.save();
+                    if (state.mirrorCamera) {
+                        procCtx.scale(-1, 1);
+                        procCtx.drawImage(video, -GRID_W, 0, GRID_W, GRID_H);
+                    } else {
+                        procCtx.drawImage(video, 0, 0, GRID_W, GRID_H);
+                    }
+                    procCtx.restore();
+
+                    const frame = procCtx.getImageData(0, 0, GRID_W, GRID_H);
+                    const data = frame.data;
+
+                    // Threshold mapped inversely to sensitivity slider (15..95 -> threshold 135..22)
+                    const diffThreshold = Math.max(18, 145 - state.sensitivity * 1.28);
+
+                    let sumX = 0;
+                    let sumY = 0;
+                    let totalWeight = 0;
+                    let activePixels = 0;
+
+                    const trailImg = trailCtx.getImageData(0, 0, GRID_W, GRID_H);
+                    const trailData = trailImg.data;
+
+                    if (state.prevFrameData) {
+                        const prev = state.prevFrameData;
+                        for (let y = 0; y < GRID_H; y++) {
+                            for (let x = 0; x < GRID_W; x++) {
+                                const idx = (y * GRID_W + x) * 4;
+                                const dR = Math.abs(data[idx] - prev[idx]);
+                                const dG = Math.abs(data[idx + 1] - prev[idx + 1]);
+                                const dB = Math.abs(data[idx + 2] - prev[idx + 2]);
+                                const rgbDiff = dR + dG + dB;
+
+                                if (rgbDiff > diffThreshold) {
+                                    const weight = Math.min(1, (rgbDiff - diffThreshold) / 200);
+                                    sumX += x * weight;
+                                    sumY += y * weight;
+                                    totalWeight += weight;
+                                    activePixels++;
+
+                                    // Write bioluminescent RGB signature into trail canvas
+                                    trailData[idx] = Math.min(255, trailData[idx] + dR * 0.9 + 20);
+                                    trailData[idx + 1] = Math.min(255, trailData[idx + 1] + dG * 1.6 + 85);
+                                    trailData[idx + 2] = Math.min(255, trailData[idx + 2] + dB * 1.8 + 130);
+                                    trailData[idx + 3] = Math.min(255, trailData[idx + 3] + Math.floor(weight * 225));
+
+                                    // Sample motion points for localized bubble & fish interaction
+                                    if ((x + y) % 5 === 0 && weight > 0.32) {
+                                        state.motionPoints.push({
+                                            x: (x / GRID_W) * state.width,
+                                            y: (y / GRID_H) * state.height,
+                                            weight
+                                        });
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    trailCtx.putImageData(trailImg, 0, 0);
+                    state.prevFrameData = new Uint8ClampedArray(data);
+
+                    const normalizedActivity = Math.min(1, activePixels / (GRID_W * GRID_H * 0.18));
+                    document.getElementById('motionMeterText').textContent = `Current: ${Math.round(normalizedActivity * 100)}%`;
+
+                    if (totalWeight > 2.2) {
+                        const targetX = (sumX / totalWeight / GRID_W) * state.width;
+                        const targetY = (sumY / totalWeight / GRID_H) * state.height;
+
+                        state.hotspot.vx = (targetX - state.hotspot.x) * 0.35;
+                        state.hotspot.vy = (targetY - state.hotspot.y) * 0.35;
+                        state.hotspot.x += state.hotspot.vx;
+                        state.hotspot.y += state.hotspot.vy;
+                        state.hotspot.intensity = Math.min(1, normalizedActivity * 1.7);
+                        state.hotspot.active = true;
+
+                        // Spawn bubbles along active motion points
+                        for (let i = 0; i < state.motionPoints.length; i++) {
+                            if (Math.random() < 0.25) {
+                                const pt = state.motionPoints[i];
+                                spawnBubble(pt.x, pt.y, state.hotspot.vx * 0.08, -1.8, 3.8);
+                            }
+                        }
+                    } else {
+                        state.hotspot.intensity *= 0.9;
+                        if (state.hotspot.intensity < 0.05) state.hotspot.active = false;
+                    }
+
+                    // Render Sonar Preview inside HUD
+                    radarCtx.clearRect(0, 0, radarCanvas.width, radarCanvas.height);
+                    radarCtx.globalAlpha = 0.45;
+                    radarCtx.drawImage(procCanvas, 0, 0, radarCanvas.width, radarCanvas.height);
+                    radarCtx.globalAlpha = 0.95;
+                    radarCtx.drawImage(trailCanvas, 0, 0, radarCanvas.width, radarCanvas.height);
+                    radarCtx.globalAlpha = 1;
+
+                    if (state.hotspot.active) {
+                        const rx = (state.hotspot.x / state.width) * radarCanvas.width;
+                        const ry = (state.hotspot.y / state.height) * radarCanvas.height;
+                        radarCtx.strokeStyle = '#22d3ee';
+                        radarCtx.lineWidth = 1.5;
+                        radarCtx.beginPath();
+                        radarCtx.arc(rx, ry, 8 + state.hotspot.intensity * 10, 0, Math.PI * 2);
+                        radarCtx.stroke();
+                    }
+                } else {
+                    // Mouse / Touch Fallback
+                    const elapsed = performance.now() - state.pointer.lastMoveTime;
+                    if (elapsed < 350) {
+                        state.hotspot.vx = (state.pointer.x - state.hotspot.x) * 0.32;
+                        state.hotspot.vy = (state.pointer.y - state.hotspot.y) * 0.32;
+                        state.hotspot.x += state.hotspot.vx;
+                        state.hotspot.y += state.hotspot.vy;
+                        state.hotspot.intensity = Math.min(1, Math.max(0.28, state.pointer.speed / 28));
+                        state.hotspot.active = true;
+
+                        const gx = Math.floor((state.hotspot.x / state.width) * GRID_W);
+                        const gy = Math.floor((state.hotspot.y / state.height) * GRID_H);
+                        const grad = trailCtx.createRadialGradient(gx, gy, 1, gx, gy, 7);
+                        grad.addColorStop(0, 'rgba(34, 211, 238, 0.9)');
+                        grad.addColorStop(0.5, 'rgba(59, 130, 246, 0.5)');
+                        grad.addColorStop(1, 'rgba(16, 185, 129, 0)');
+                        trailCtx.fillStyle = grad;
+                        trailCtx.beginPath();
+                        trailCtx.arc(gx, gy, 7, 0, Math.PI * 2);
+                        trailCtx.fill();
+
+                        if (Math.random() < 0.45) {
+                            spawnBubble(state.hotspot.x, state.hotspot.y, state.hotspot.vx * 0.08, -1.6, 3.5);
+                        }
+                    } else {
+                        state.hotspot.intensity *= 0.92;
+                        if (state.hotspot.intensity < 0.04) state.hotspot.active = false;
+                    }
+
+                    document.getElementById('motionMeterText').textContent = `Pointer: ${Math.round(state.hotspot.intensity * 100)}%`;
+
+                    radarCtx.fillStyle = '#031324';
+                    radarCtx.fillRect(0, 0, radarCanvas.width, radarCanvas.height);
+                    radarCtx.drawImage(trailCanvas, 0, 0, radarCanvas.width, radarCanvas.height);
+                }
+            }
+
+            // ============================================================================
+            // AQUARIUM RENDERING LAYERS
+            // ============================================================================
+            function drawOceanBackdrop(w, h) {
+                const skyGrad = ctx.createLinearGradient(0, 0, 0, h);
+                skyGrad.addColorStop(0, '#062c49');
+                skyGrad.addColorStop(0.35, '#041e35');
+                skyGrad.addColorStop(0.75, '#021222');
+                skyGrad.addColorStop(1, '#010a14');
+                ctx.fillStyle = skyGrad;
+                ctx.fillRect(0, 0, w, h);
+
+                // Shimmering water surface wave line at top
+                ctx.save();
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                for (let x = 0; x <= w; x += 40) {
+                    const y = 14 + Math.sin(x * 0.015 + state.time * 2.2) * 5;
+                    ctx.lineTo(x, y);
+                }
+                ctx.lineTo(w, 0);
+                ctx.closePath();
+                const surfGrad = ctx.createLinearGradient(0, 0, 0, 28);
+                surfGrad.addColorStop(0, 'rgba(125, 211, 252, 0.42)');
+                surfGrad.addColorStop(1, 'rgba(56, 189, 248, 0)');
+                ctx.fillStyle = surfGrad;
+                ctx.fill();
+                ctx.restore();
+
+                // Caustic Sunbeams
+                ctx.save();
+                ctx.globalCompositeOperation = 'screen';
+                for (const ray of state.lightRays) {
+                    const sway = Math.sin(state.time * ray.speed + ray.phase) * 35;
+                    const rx = ray.x + sway;
+
+                    const rayGrad = ctx.createLinearGradient(rx, 0, rx + ray.angle * h, h * 0.92);
+                    const pulseAlpha = ray.alpha + Math.sin(state.time * 1.4 + ray.phase) * 0.02 + state.surgeFlash * 0.1;
+                    rayGrad.addColorStop(0, `rgba(103, 232, 249, ${Math.max(0, pulseAlpha)})`);
+                    rayGrad.addColorStop(0.6, `rgba(56, 189, 248, ${Math.max(0, pulseAlpha * 0.45)})`);
+                    rayGrad.addColorStop(1, 'rgba(14, 165, 233, 0)');
+
+                    ctx.fillStyle = rayGrad;
+                    ctx.beginPath();
+                    ctx.moveTo(rx - ray.width * 0.35, 0);
+                    ctx.lineTo(rx + ray.width * 0.35, 0);
+                    ctx.lineTo(rx + ray.angle * h + ray.width * 1.15, h);
+                    ctx.lineTo(rx + ray.angle * h - ray.width * 1.15, h);
+                    ctx.closePath();
+                    ctx.fill();
+                }
+                ctx.restore();
+            }
+
+            function drawBioluminescentMotionTrail(w, h) {
+                if (state.rgbTrailOpacity <= 0.01) return;
+
+                ctx.save();
+                ctx.globalCompositeOperation = 'screen';
+                ctx.globalAlpha = state.rgbTrailOpacity;
+                ctx.filter = 'blur(12px)';
+                ctx.drawImage(trailCanvas, 0, 0, w, h);
+                ctx.filter = 'none';
+                ctx.restore();
+
+                if (state.hotspot.active) {
+                    ctx.save();
+                    ctx.globalCompositeOperation = 'screen';
+                    const r = 75 + state.hotspot.intensity * 105;
+                    const aura = ctx.createRadialGradient(
+                        state.hotspot.x, state.hotspot.y, 6,
+                        state.hotspot.x, state.hotspot.y, r
+                    );
+                    aura.addColorStop(0, `rgba(34, 211, 238, ${0.32 * state.hotspot.intensity})`);
+                    aura.addColorStop(0.5, `rgba(59, 130, 246, ${0.16 * state.hotspot.intensity})`);
+                    aura.addColorStop(1, 'rgba(6, 182, 212, 0)');
+                    ctx.fillStyle = aura;
+                    ctx.beginPath();
+                    ctx.arc(state.hotspot.x, state.hotspot.y, r, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.restore();
+                }
+            }
+
+            function updateAndDrawPlankton(w, h) {
+                ctx.save();
+                for (const p of state.plankton) {
+                    p.x += p.vx + Math.sin(state.time + p.y * 0.02) * 0.15;
+                    p.y += p.vy;
+
+                    if (state.hotspot.active) {
+                        const dx = p.x - state.hotspot.x;
+                        const dy = p.y - state.hotspot.y;
+                        const dist = Math.hypot(dx, dy);
+                        if (dist < 160 && dist > 1) {
+                            p.x += (dx / dist) * state.hotspot.intensity * 1.4;
+                            p.y += (dy / dist) * state.hotspot.intensity * 1.4;
+                        }
+                    }
+
+                    if (p.x < 0) p.x = w;
+                    if (p.x > w) p.x = 0;
+                    if (p.y < 0) p.y = h;
+                    if (p.y > h) p.y = 0;
+
+                    ctx.fillStyle = `hsla(${p.hue}, 90%, 75%, ${p.alpha})`;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                ctx.restore();
+            }
+
+            function updateAndDrawJellies(w, h) {
+                for (const j of state.jellies) {
+                    j.pulsePhase += 0.045;
+                    const pulse = Math.sin(j.pulsePhase);
+
+                    j.x += j.vx + Math.sin(state.time * 0.7 + j.pulsePhase) * 0.25;
+                    j.y += j.vy * (0.7 + Math.max(0, pulse) * 0.65);
+
+                    if (state.hotspot.active) {
+                        const dx = j.x - state.hotspot.x;
+                        const dy = j.y - state.hotspot.y;
+                        const dist = Math.hypot(dx, dy);
+                        if (dist < 220 && dist > 1) {
+                            const push = ((220 - dist) / 220) * state.hotspot.intensity;
+                            j.x += (dx / dist) * push * 2.4;
+                            j.y += (dy / dist) * push * 2.4;
+                            j.glowBoost = Math.min(1, j.glowBoost + 0.08);
+                        }
+                    }
+                    j.glowBoost *= 0.95;
+
+                    if (j.y < -60) j.y = h + 40;
+                    if (j.x < -50) j.x = w + 50;
+                    if (j.x > w + 50) j.x = -50;
+
+                    ctx.save();
+                    ctx.translate(j.x, j.y);
+
+                    // Outer bioluminescent halo
+                    const haloR = j.radius * (2.2 + j.glowBoost * 0.9);
+                    const halo = ctx.createRadialGradient(0, 0, j.radius * 0.2, 0, 0, haloR);
+                    halo.addColorStop(0, `hsla(${j.hue}, 95%, 70%, ${0.35 + j.glowBoost * 0.35})`);
+                    halo.addColorStop(1, `hsla(${j.hue}, 95%, 60%, 0)`);
+                    ctx.fillStyle = halo;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, haloR, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // Flowing tentacles
+                    ctx.strokeStyle = `hsla(${j.hue}, 90%, 75%, 0.55)`;
+                    ctx.lineWidth = 1.6;
+                    for (let t = -3; t <= 3; t++) {
+                        ctx.beginPath();
+                        const startX = t * (j.radius * 0.22);
+                        ctx.moveTo(startX, j.radius * 0.2);
+                        for (let seg = 1; seg <= 4; seg++) {
+                            const sy = j.radius * 0.2 + seg * (j.radius * 0.42);
+                            const sx = startX + Math.sin(j.pulsePhase * 1.4 - seg * 0.7 + t) * 6;
+                            ctx.lineTo(sx, sy);
+                        }
+                        ctx.stroke();
+                    }
+
+                    // Jellyfish bell dome
+                    const bellW = j.radius * (1 + pulse * 0.12);
+                    const bellH = j.radius * (0.85 - pulse * 0.1);
+                    const bellGrad = ctx.createRadialGradient(0, -bellH * 0.3, 2, 0, 0, bellW);
+                    bellGrad.addColorStop(0, `hsla(${j.hue}, 100%, 88%, 0.9)`);
+                    bellGrad.addColorStop(0.7, `hsla(${j.hue}, 90%, 62%, 0.65)`);
+                    bellGrad.addColorStop(1, `hsla(${j.hue}, 85%, 48%, 0.2)`);
+
+                    ctx.fillStyle = bellGrad;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, bellW, Math.PI, 0, false);
+                    ctx.bezierCurveTo(bellW * 0.5, bellH * 0.35, -bellW * 0.5, bellH * 0.35, -bellW, 0);
+                    ctx.closePath();
+                    ctx.fill();
+
+                    ctx.restore();
+                }
+            }
+
+            function drawSeabedAndCorals(w, h) {
+                // Distant sandy ridge
+                ctx.save();
+                ctx.fillStyle = '#041f36';
+                ctx.beginPath();
+                ctx.moveTo(0, h);
+                for (let x = 0; x <= w; x += 60) {
+                    const y = h - 55 - Math.sin(x * 0.006 + 1.2) * 22;
+                    ctx.lineTo(x, y);
+                }
+                ctx.lineTo(w, h);
+                ctx.closePath();
+                ctx.fill();
+
+                // Decorative Reef Coral Outcrops
+                for (const c of state.corals) {
+                    ctx.save();
+                    ctx.translate(c.x, c.y);
+                    ctx.fillStyle = c.color;
+                    ctx.strokeStyle = c.color;
+                    ctx.lineCap = 'round';
+
+                    for (let b = 0; b < c.branches; b++) {
+                        const angle = -Math.PI * 0.82 + (b / (c.branches - 1)) * (Math.PI * 0.64);
+                        const sway = Math.sin(state.time * 1.5 + c.seed + b) * 0.05;
+                        const len = c.radius * (0.75 + (b % 2) * 0.28);
+                        ctx.lineWidth = 7;
+                        ctx.beginPath();
+                        ctx.moveTo(0, 0);
+                        ctx.quadraticCurveTo(
+                            Math.cos(angle + sway) * len * 0.5,
+                            Math.sin(angle + sway) * len * 0.5,
+                            Math.cos(angle + sway) * len,
+                            Math.sin(angle + sway) * len
+                        );
+                        ctx.stroke();
+
+                        ctx.beginPath();
+                        ctx.arc(
+                            Math.cos(angle + sway) * len,
+                            Math.sin(angle + sway) * len,
+                            5.5,
+                            0,
+                            Math.PI * 2
+                        );
+                        ctx.fill();
+                    }
+                    ctx.restore();
+                }
+
+                // Foreground sculpted sandbed
+                const sandGrad = ctx.createLinearGradient(0, h - 65, 0, h);
+                sandGrad.addColorStop(0, '#0c3554');
+                sandGrad.addColorStop(1, '#061a2e');
+                ctx.fillStyle = sandGrad;
+                ctx.beginPath();
+                ctx.moveTo(0, h);
+                for (let x = 0; x <= w; x += 50) {
+                    const y = h - 34 - Math.sin(x * 0.009) * 14;
+                    ctx.lineTo(x, y);
+                }
+                ctx.lineTo(w, h);
+                ctx.closePath();
+                ctx.fill();
+                ctx.restore();
+            }
+
+            function updateAndDrawGiantClam() {
+                const clam = state.clam;
+                let target = 0.28 + Math.sin(state.time * 0.9) * 0.08;
+
+                if (state.hotspot.active) {
+                    const dist = Math.hypot(state.hotspot.x - clam.x, state.hotspot.y - clam.y);
+                    if (dist < 220) {
+                        target = 0.95;
+                        clam.pearlGlow = Math.min(1.4, clam.pearlGlow + 0.06);
+                        if (clam.bubbleCooldown <= 0) {
+                            for (let i = 0; i < 4; i++) {
+                                spawnBubble(clam.x, clam.y - 12, (Math.random() - 0.5) * 1.5, -2.6, 4.5);
+                            }
+                            playBubbleSound(520);
+                            clam.bubbleCooldown = 14;
+                        }
+                    }
+                }
+                if (clam.bubbleCooldown > 0) clam.bubbleCooldown--;
+                clam.openAmount += (target - clam.openAmount) * 0.08;
+                clam.pearlGlow = Math.max(0.45, clam.pearlGlow * 0.98);
+
+                ctx.save();
+                ctx.translate(clam.x, clam.y);
+
+                // Bottom shell half
+                ctx.fillStyle = '#4c1d95';
+                ctx.beginPath();
+                ctx.ellipse(0, 4, 42, 16, 0, 0, Math.PI, false);
+                ctx.fill();
+
+                // Glowing Pearl inside
+                const pearlY = -6 - clam.openAmount * 6;
+                const glow = ctx.createRadialGradient(0, pearlY, 2, 0, pearlY, 32 * clam.pearlGlow);
+                glow.addColorStop(0, 'rgba(254, 249, 195, 0.95)');
+                glow.addColorStop(0.45, 'rgba(56, 189, 248, 0.45)');
+                glow.addColorStop(1, 'rgba(56, 189, 248, 0)');
+                ctx.fillStyle = glow;
+                ctx.beginPath();
+                ctx.arc(0, pearlY, 32 * clam.pearlGlow, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillStyle = '#fef9c3';
+                ctx.beginPath();
+                ctx.arc(0, pearlY, 9.5, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Top hinged shell half
+                ctx.save();
+                ctx.translate(-36, 0);
+                ctx.rotate(-clam.openAmount * 0.65);
+                ctx.fillStyle = '#6d28d9';
+                ctx.beginPath();
+                ctx.ellipse(36, -2, 42, 16, 0, Math.PI, 0, false);
+                ctx.fill();
+                ctx.restore();
+
+                ctx.restore();
+            }
+
+            function updateAndDrawKelp() {
+                for (const k of state.kelps) {
+                    if (state.hotspot.active) {
+                        const dx = k.baseX - state.hotspot.x;
+                        const dy = (k.baseY - k.segments * k.segLen * 0.5) - state.hotspot.y;
+                        const dist = Math.hypot(dx, dy);
+                        if (dist < 180) {
+                            const push = ((180 - dist) / 180) * state.hotspot.intensity;
+                            k.bendVel += (state.hotspot.vx * 0.04 + Math.sign(dx) * push * 1.4);
+                        }
+                    }
+
+                    // Spring physics recovery
+                    k.bendVel += -k.bendOffset * 0.06;
+                    k.bendVel *= 0.88;
+                    k.bendOffset += k.bendVel;
+
+                    ctx.save();
+                    ctx.strokeStyle = `hsla(${k.hue}, 72%, 38%, 0.88)`;
+                    ctx.lineWidth = 6;
+                    ctx.lineCap = 'round';
+                    ctx.beginPath();
+
+                    let cx = k.baseX;
+                    let cy = k.baseY;
+                    ctx.moveTo(cx, cy);
+
+                    for (let s = 1; s <= k.segments; s++) {
+                        const frac = s / k.segments;
+                        const wave = Math.sin(state.time * 1.8 + k.phase + s * 0.45) * (8 * frac);
+                        cx += wave + k.bendOffset * frac * 0.25;
+                        cy -= k.segLen;
+                        ctx.lineTo(cx, cy);
+                    }
+                    ctx.stroke();
+                    ctx.restore();
+                }
+            }
+
+            function updateAndDrawFoodPellets(h) {
+                for (let i = state.foodPellets.length - 1; i >= 0; i--) {
+                    const fp = state.foodPellets[i];
+                    fp.y += fp.vy;
+                    fp.x += fp.vx + Math.sin(state.time * 3 + i) * 0.3;
+
+                    if (fp.y > h - 30 || fp.eaten) {
+                        state.foodPellets.splice(i, 1);
+                        continue;
+                    }
+
+                    ctx.save();
+                    ctx.fillStyle = '#f59e0b';
+                    ctx.shadowColor = '#fbbf24';
+                    ctx.shadowBlur = 8;
+                    ctx.beginPath();
+                    ctx.arc(fp.x, fp.y, fp.r, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.restore();
+                }
+            }
+
+            function updateAndDrawFishes(w, h) {
+                for (const f of state.fishes) {
+                    const sp = f.species;
+
+                    // 1. Seek nearest food pellet if available
+                    let chasingFood = false;
+                    if (state.foodPellets.length > 0) {
+                        let nearest = null;
+                        let minDist = 280;
+                        for (const fp of state.foodPellets) {
+                            const d = Math.hypot(fp.x - f.x, fp.y - f.y);
+                            if (d < minDist) {
+                                minDist = d;
+                                nearest = fp;
+                            }
+                        }
+                        if (nearest) {
+                            chasingFood = true;
+                            const dx = nearest.x - f.x;
+                            const dy = nearest.y - f.y;
+                            const dist = Math.max(1, Math.hypot(dx, dy));
+                            f.vx += (dx / dist) * 0.28;
+                            f.vy += (dy / dist) * 0.28;
+                            if (dist < f.size * 0.85) {
+                                nearest.eaten = true;
+                                spawnBubble(f.x, f.y, 0, -1.5, 3);
+                                playBubbleSound(620);
+                            }
+                        }
+                    }
+
+                    // 2. React to RGB Camera / Pointer Motion Hotspot
+                    if (!chasingFood && state.hotspot.active) {
+                        const dx = state.hotspot.x - f.x;
+                        const dy = state.hotspot.y - f.y;
+                        const dist = Math.max(1, Math.hypot(dx, dy));
+
+                        if (dist < 340) {
+                            const force = ((340 - dist) / 340) * state.hotspot.intensity;
+                            if (state.fishMode === 'attract') {
+                                f.vx += (dx / dist) * force * 0.35;
+                                f.vy += (dy / dist) * force * 0.35;
+                            } else if (state.fishMode === 'scatter') {
+                                f.vx -= (dx / dist) * force * 0.65;
+                                f.vy -= (dy / dist) * force * 0.65;
+                            } else {
+                                // Vortex Schooling around motion hotspot
+                                const tx = -dy / dist;
+                                const ty = dx / dist;
+                                f.vx += (tx * 0.42 + (dx / dist) * 0.14) * force;
+                                f.vy += (ty * 0.42 + (dy / dist) * 0.14) * force;
+                            }
+                        }
+                    }
+
+                    // Gentle vertical homeostasis
+                    f.vy += Math.sin(state.time * 1.4 + f.tailPhase) * 0.015;
+                    if (f.y < 55) f.vy += 0.12;
+                    if (f.y > h - 75) f.vy -= 0.15;
+
+                    // Speed clamping
+                    const speed = Math.hypot(f.vx, f.vy);
+                    const maxSpeed = 4.2 * sp.speedMult;
+                    const minSpeed = 0.85 * sp.speedMult;
+                    if (speed > maxSpeed) {
+                        f.vx = (f.vx / speed) * maxSpeed;
+                        f.vy = (f.vy / speed) * maxSpeed;
+                    } else if (speed < minSpeed) {
+                        const dir = f.facingLeft ? -1 : 1;
+                        f.vx += dir * 0.12;
+                    }
+
+                    f.x += f.vx;
+                    f.y += f.vy;
+                    f.tailPhase += f.tailSpeed + speed * 0.08;
+
+                    if (Math.abs(f.vx) > 0.15) {
+                        f.facingLeft = f.vx < 0;
+                    }
+
+                    // Screen wrap horizontally
+                    const margin = f.size * 2;
+                    if (f.x < -margin) f.x = w + margin;
+                    if (f.x > w + margin) f.x = -margin;
+
+                    // Draw Articulated Fish
+                    ctx.save();
+                    ctx.translate(f.x, f.y);
+                    const tilt = Math.atan2(f.vy, Math.abs(f.vx)) * 0.45;
+                    ctx.scale(f.facingLeft ? -1 : 1, 1);
+                    ctx.rotate(tilt);
+
+                    const s = f.size;
+                    const wag = Math.sin(f.tailPhase) * (s * 0.24);
+
+                    // Articulated Tail Fin
+                    ctx.fillStyle = sp.finColor;
+                    ctx.beginPath();
+                    ctx.moveTo(-s * 0.75, 0);
+                    ctx.lineTo(-s * 1.35, -s * 0.52 + wag);
+                    ctx.quadraticCurveTo(-s * 1.1, wag * 0.5, -s * 1.35, s * 0.52 + wag);
+                    ctx.closePath();
+                    ctx.fill();
+
+                    // Dorsal & Ventral Fins
+                    ctx.beginPath();
+                    ctx.moveTo(-s * 0.2, -s * 0.45);
+                    ctx.quadraticCurveTo(-s * 0.55, -s * 0.9, -s * 0.65, -s * 0.35);
+                    ctx.closePath();
+                    ctx.fill();
+
+                    // Main Streamlined Body
+                    ctx.fillStyle = sp.bodyColor;
+                    ctx.beginPath();
+                    ctx.ellipse(0, 0, s * 0.88, s * 0.52, 0, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // Decorative Species Stripe
+                    ctx.strokeStyle = sp.stripeColor;
+                    ctx.lineWidth = Math.max(2, s * 0.14);
+                    ctx.beginPath();
+                    ctx.arc(s * 0.1, 0, s * 0.46, -Math.PI * 0.38, Math.PI * 0.38);
+                    ctx.stroke();
+
+                    // Pectoral Fin
+                    ctx.fillStyle = sp.accentColor;
+                    ctx.beginPath();
+                    ctx.ellipse(-s * 0.05, s * 0.15, s * 0.24, s * 0.12, 0.4, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // Eye
+                    ctx.fillStyle = '#ffffff';
+                    ctx.beginPath();
+                    ctx.arc(s * 0.48, -s * 0.12, s * 0.14, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.fillStyle = '#0f172a';
+                    ctx.beginPath();
+                    ctx.arc(s * 0.52, -s * 0.12, s * 0.07, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.restore();
+                }
+            }
+
+            function updateAndDrawBubbles(h) {
+                // Occasional ambient seabed bubbles
+                if (Math.random() < 0.18) {
+                    spawnBubble(Math.random() * state.width, h - 25, 0, -1.4, 3.2);
+                }
+
+                ctx.save();
+                for (let i = state.bubbles.length - 1; i >= 0; i--) {
+                    const b = state.bubbles[i];
+                    b.wobblePhase += 0.08;
+                    b.x += b.vx + Math.sin(b.wobblePhase) * 0.45;
+                    b.y += b.vy;
+                    b.vx *= 0.98;
+
+                    if (b.y < -20) {
+                        state.bubbles.splice(i, 1);
+                        continue;
+                    }
+
+                    ctx.strokeStyle = `rgba(186, 230, 253, ${b.alpha})`;
+                    ctx.lineWidth = 1.2;
+                    ctx.beginPath();
+                    ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+                    ctx.stroke();
+
+                    // Specular highlight dot
+                    ctx.fillStyle = `rgba(255, 255, 255, ${b.alpha * 0.85})`;
+                    ctx.beginPath();
+                    ctx.arc(b.x - b.r * 0.32, b.y - b.r * 0.32, Math.max(0.8, b.r * 0.25), 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                ctx.restore();
+            }
+
+            // ============================================================================
+            // MAIN ANIMATION LOOP
+            // ============================================================================
+            function animate() {
+                state.time += 0.016;
+                if (state.surgeFlash > 0) {
+                    state.surgeFlash = Math.max(0, state.surgeFlash - 0.02);
+                }
+
+                const w = state.width;
+                const h = state.height;
+
+                processRgbMotionFrame();
+
+                drawOceanBackdrop(w, h);
+                drawBioluminescentMotionTrail(w, h);
+                updateAndDrawPlankton(w, h);
+                updateAndDrawJellies(w, h);
+                drawSeabedAndCorals(w, h);
+                updateAndDrawGiantClam();
+                updateAndDrawKelp();
+                updateAndDrawFoodPellets(h);
+                updateAndDrawFishes(w, h);
+                updateAndDrawBubbles(h);
+
+                requestAnimationFrame(animate);
+            }
+
+            // ============================================================================
+            // EVENT LISTENERS & KEYBOARD CONTROLS (F1 FOR CAMERA FLIP, F11 FULLSCREEN)
+            // ============================================================================
+            function handleResize() {
+                state.width = window.innerWidth;
+                state.height = window.innerHeight;
+                canvas.width = state.width;
+                canvas.height = state.height;
+                initSceneEntities();
+            }
+
+            window.addEventListener('resize', handleResize);
+
+            function handlePointerMove(clientX, clientY) {
+                const dx = clientX - state.pointer.x;
+                const dy = clientY - state.pointer.y;
+                state.pointer.speed = Math.hypot(dx, dy);
+                state.pointer.prevX = state.pointer.x;
+                state.pointer.prevY = state.pointer.y;
+                state.pointer.x = clientX;
+                state.pointer.y = clientY;
+                state.pointer.lastMoveTime = performance.now();
+            }
+
+            window.addEventListener('mousemove', (e) => handlePointerMove(e.clientX, e.clientY));
+            window.addEventListener('touchmove', (e) => {
+                if (e.touches.length > 0) {
+                    handlePointerMove(e.touches[0].clientX, e.touches[0].clientY);
+                }
+            }, { passive: true });
+
+            // HUD Visibility Toggle (Starts completely hidden; toggled via H or Double-Click)
+            function toggleHud() {
+                state.hudVisible = !state.hudVisible;
+                const panel = document.getElementById('hudPanel');
+                const topLeftBar = document.getElementById('topLeftBar');
+                const topRightBar = document.getElementById('topRightBar');
+                const toggleText = document.getElementById('toggleHudText');
+
+                if (state.hudVisible) {
+                    panel.classList.remove('opacity-0', '-translate-x-8', 'pointer-events-none');
+                    topLeftBar.classList.remove('opacity-0', 'pointer-events-none');
+                    topRightBar.classList.remove('opacity-0', 'pointer-events-none');
+                    toggleText.textContent = 'Hide Controls';
+                } else {
+                    panel.classList.add('opacity-0', '-translate-x-8', 'pointer-events-none');
+                    topLeftBar.classList.add('opacity-0', 'pointer-events-none');
+                    topRightBar.classList.add('opacity-0', 'pointer-events-none');
+                    toggleText.textContent = 'Aquarium Controls';
+                }
+            }
+
+            canvas.addEventListener('dblclick', toggleHud);
+            document.getElementById('toggleHudBtn').addEventListener('click', toggleHud);
+            document.getElementById('closeHudBtn').addEventListener('click', toggleHud);
+            document.getElementById('cameraToggleBtn').addEventListener('click', toggleCamera);
+            document.getElementById('flipCameraBtn').addEventListener('click', toggleCameraMirror);
+            document.getElementById('flipCameraQuickBtn').addEventListener('click', toggleCameraMirror);
+            document.getElementById('feedBtn').addEventListener('click', triggerFeedAndWave);
+
+            // Audio Toggle
+            document.getElementById('audioToggleBtn').addEventListener('click', () => {
+                initAudio();
+                state.audioEnabled = !state.audioEnabled;
+                if (state.audioCtx && state.audioCtx.state === 'suspended') {
+                    state.audioCtx.resume();
+                }
+                if (state.masterGain) {
+                    state.masterGain.gain.value = state.audioEnabled ? 0.16 : 0;
+                }
+                const icon = document.getElementById('audioIcon');
+                const label = document.getElementById('audioLabel');
+                if (state.audioEnabled) {
+                    icon.className = 'ph-fill ph-speaker-high text-cyan-400 text-lg';
+                    label.textContent = 'Sound On';
+                } else {
+                    icon.className = 'ph-fill ph-speaker-slash text-slate-400 text-lg';
+                    label.textContent = 'Sound Off';
+                }
+            });
+
+            // Sliders
+            document.getElementById('sensitivitySlider').addEventListener('input', (e) => {
+                state.sensitivity = Number(e.target.value);
+                document.getElementById('sensitivityVal').textContent = `${state.sensitivity}%`;
+            });
+
+            document.getElementById('rgbTrailSlider').addEventListener('input', (e) => {
+                const val = Number(e.target.value);
+                state.rgbTrailOpacity = val / 100;
+                document.getElementById('rgbTrailVal').textContent = `${val}%`;
+            });
+
+            document.getElementById('entityDensitySlider').addEventListener('input', (e) => {
+                const val = Number(e.target.value);
+                state.densityScale = val / 100;
+                document.getElementById('entityDensityVal').textContent = `${val}%`;
+                syncDynamicEntities();
+            });
+
+            // Fish Behavior Mode Buttons
+            document.querySelectorAll('.fish-mode-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    state.fishMode = btn.dataset.mode;
+                    document.querySelectorAll('.fish-mode-btn').forEach(b => {
+                        if (b.dataset.mode === state.fishMode) {
+                            b.className = 'fish-mode-btn py-1.5 px-2 rounded-lg font-medium border border-cyan-500/60 bg-cyan-500/20 text-cyan-200 transition-all';
+                        } else {
+                            b.className = 'fish-mode-btn py-1.5 px-2 rounded-lg font-medium border border-white/10 bg-white/5 text-slate-300 hover:bg-white/10 transition-all';
+                        }
+                    });
+                });
+            });
+
+            // Keyboard Shortcuts:
+            // - F1 exclusively inverts Left/Right on the camera (F11 is untouched for Fullscreen)
+            // - H toggles the hidden HUD
+            // - Space drops fish food & triggers a bubble wave
+            window.addEventListener('keydown', (e) => {
+                if (e.key === 'F1') {
+                    e.preventDefault();
+                    toggleCameraMirror();
+                } else if (e.key === 'h' || e.key === 'H') {
+                    toggleHud();
+                } else if (e.code === 'Space') {
+                    e.preventDefault();
+                    triggerFeedAndWave();
+                }
+            });
+
+            // Initialize Scene, Start Animation Loop & Automatically Activate RGB Camera
+            handleResize();
+            requestAnimationFrame(animate);
+            toggleCamera();
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initAquariumScene);
+        } else {
+            initAquariumScene();
+        }
+    </script>
+</body>
+</html>
